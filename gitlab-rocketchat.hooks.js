@@ -9,7 +9,7 @@ class Script {
 				case 'Push Hook':
 					return this.pushEvent(request.content);
 				case 'Merge Request Hook':
-					return this.mergeRequestEvent(request.content);
+					return this.mergeRequestEvents(request.content);
 				case 'Note Hook':
 					return this.commentEvent(request.content);
 				case 'Issue Hook':
@@ -106,7 +106,7 @@ pushed ${data.total_commits_count} commits to ${project.name}. See: ${project.we
 				{
 					title: data.total_commits_count + ' Commits',
 					title_link: project.web_url,
-					text: data.commits.map((commit) => `  - ${new Date(commit.timestamp).toUTCString()} **${commit.author.name}**: [${commit.message}](${commit.url})`).join('\n'),
+					text: data.commits.map((commit) => `  - ${new Date(commit.timestamp).toUTCString()} [${commit.id.slice(0, 8)}](${commit.url}) by ${commit.author.name}: ${commit.message.replace(/\s*$/, '')}`).join('\n'),
 					color: NOTIF_COLOR
 				}
 			]

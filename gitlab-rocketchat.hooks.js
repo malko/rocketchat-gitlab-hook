@@ -64,7 +64,6 @@ See: ${data.object_attributes.url}`,
 			let message = commit.message.replace(/\n[^\s\S]+/, '...').replace(/\n$/,'');
 			text = `${user.name} commented on commit [${commit.id.replace(/^(.{8}).*$/, '$1')} ${message}](${comment.url})`;
 			attachments.push({
-				icon_url: user.avatar_url,
 				text: comment.note,
 				color: NOTIF_COLOR
 			});

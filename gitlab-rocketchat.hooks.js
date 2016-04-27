@@ -1,6 +1,7 @@
 /*jshint  esnext:true*/
 // see https://gitlab.com/help/web_hooks/web_hooks for full json posted by GitLab
 const NOTIF_COLOR = '#6498CC';
+const refParser = (ref) => ref.replace(/^.*?([^\/]+)$/,'$1');
 
 class Script {
 	process_incoming_request({request}) {
@@ -9,7 +10,7 @@ class Script {
 				case 'Push Hook':
 					return this.pushEvent(request.content);
 				case 'Merge Request Hook':
-					return this.mergeRequestEvents(request.content);
+					return this.mergeRequestEvent(request.content);
 				case 'Note Hook':
 					return this.commentEvent(request.content);
 				case 'Issue Hook':
@@ -36,7 +37,7 @@ class Script {
 *Description:* ${data.object_attributes.description}.
 See: ${data.object_attributes.url}`,
 				icon_url: data.user.avatar_url,
-
+				attachments:[]
 			}
 		};
 	}
@@ -84,7 +85,7 @@ See: ${data.object_attributes.url}`,
 				icon_url: mr.target.avatar_url || mr.source.avatar_url || user.avatar_url || '',
 				attachments: [
 					{
-						title: `${user.name} ${mr.action} Merge Request #${mr.id} ${mr.title}`,
+						title: `${user.name} ${mr.action} Merge Request #${mr.iid} ${mr.title}`,
 						title_link: mr.url,
 						text: `_${mr.source_branch} into ${mr.target_branch}_`,
 						color: NOTIF_COLOR
@@ -96,11 +97,20 @@ See: ${data.object_attributes.url}`,
 
 	pushEvent(data) {
 		const project = data.project;
+		if (data.checkout_sha === null && !data.commits.length) {
+			return {
+				content: {
+					username: `gitlab/${project.name}`,
+					text: `${data.user_name} removed branch ${refParser(data.ref)} from [${project.name}](${project.web_url})`,
+					icon_url: project.avatar_url || data.user_avatar || '',
+					attachments:[]
+				}
+			};
+		}
 		return {
 		  content: {
 			username: `gitlab/${project.name}`,
-			text: `![${data.user_name}](${data.user_avatar}) ${data.user_name}
-pushed ${data.total_commits_count} commits to ${project.name}. See: ${project.web_url}`,
+			text: `${data.user_name} pushed ${data.total_commits_count} commits to [${project.name}](${project.web_url})`,
 			icon_url: project.avatar_url || data.user_avatar || '',
 			attachments: [
 				{
@@ -115,7 +125,7 @@ pushed ${data.total_commits_count} commits to ${project.name}. See: ${project.we
 	}
 
 	tagEvent(data) {
-		let tag = data.ref.replace(/^.*?([^\/]+)$/, '$1');
+		let tag = refParser(data.ref);
 		return {
 			content: {
 				username: `gitlab/${data.project.name}`,

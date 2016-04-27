@@ -9,7 +9,7 @@ class Script {
 				case 'Push Hook':
 					return this.pushEvent(request.content);
 				case 'Merge Request Hook':
-					return this.mergeRequestEvents(request.content);
+					return this.mergeRequestEvent(request.content);
 				case 'Note Hook':
 					return this.commentEvent(request.content);
 				case 'Issue Hook':

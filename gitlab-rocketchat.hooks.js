@@ -48,7 +48,7 @@ See: ${data.object_attributes.url}`,
 		let text;
 		if (data.merge_request) {
 			let mr = data.merge_request;
-			text = `${user.name} commented on Merge Request #${mr.id} [${mr.title}](${comment.url})`;
+			text = `${user.name} commented on merge request #${mr.id} [${mr.title}](${comment.url})`;
 
 		} else if (data.commit) {
 			let commit = data.commit;
@@ -83,11 +83,10 @@ See: ${data.object_attributes.url}`,
 			content: {
 				username: `gitlab/${mr.target.name}`,
 				icon_url: mr.target.avatar_url || mr.source.avatar_url || user.avatar_url || '',
+				text: `${user.name} ${mr.action} Merge Request [#${mr.iid} ${mr.title}](${mr.url})`,
 				attachments: [
 					{
-						title: `${user.name} ${mr.action} Merge Request #${mr.iid} ${mr.title}`,
-						title_link: mr.url,
-						text: `_${mr.source_branch} into ${mr.target_branch}_`,
+						text: `${mr.source_branch} into ${mr.target_branch}`,
 						color: NOTIF_COLOR
 					}
 				]
@@ -114,8 +113,6 @@ See: ${data.object_attributes.url}`,
 			icon_url: project.avatar_url || data.user_avatar || '',
 			attachments: [
 				{
-					title: data.total_commits_count + ' Commits',
-					title_link: project.web_url,
 					text: data.commits.map((commit) => `  - ${new Date(commit.timestamp).toUTCString()} [${commit.id.slice(0, 8)}](${commit.url}) by ${commit.author.name}: ${commit.message.replace(/\s*$/, '')}`).join('\n'),
 					color: NOTIF_COLOR
 				}

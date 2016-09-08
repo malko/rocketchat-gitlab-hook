@@ -1,8 +1,7 @@
 /*jshint  esnext:true*/
 // see https://gitlab.com/help/web_hooks/web_hooks for full json posted by GitLab
 const NOTIF_COLOR = '#6498CC';
-const branchParser = (ref) => ref.replace(/^refs\/heads\/(.+)$/,'$1');
-const tagParser = (ref) => ref.replace(/^refs\/tags\/(.+)$/,'$1');
+const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/,'$1');
 
 class Script {
 	process_incoming_request({request}) {
@@ -114,17 +113,17 @@ See: ${data.object_attributes.url}`,
 			return {
 				content: {
 					username: `gitlab/${project.name}`,
-					text: `${data.user_name} removed branch ${branchParser(data.ref)} from [${project.name}](${project.web_url})`,
+					text: `${data.user_name} removed branch ${refParser(data.ref)} from [${project.name}](${project.web_url})`,
 					icon_url: project.avatar_url || data.user_avatar || '',
 					attachments:[]
 				}
 			};
 		}
-        	if (data.before === "0000000000000000000000000000000000000000") {
+        	if (data.before == 0) {
         	  return {
 			  content: {
 				username: `gitlab/${project.name}`,
-				text: `${data.user_name} pushed new branch [${branchParser(data.ref)}](${project.web_url}/commits/${branchParser(data.ref)}) to [${project.name}](${project.web_url}), which is ${data.total_commits_count} commits ahaed of master`,
+				text: `${data.user_name} pushed new branch [${refParser(data.ref)}](${project.web_url}/commits/${refParser(data.ref)}) to [${project.name}](${project.web_url}), which is ${data.total_commits_count} commits ahaed of master`,
 				icon_url: project.avatar_url || data.user_avatar || '',
 				attachments: []
 			  }
@@ -133,7 +132,7 @@ See: ${data.object_attributes.url}`,
 		return {
 		  content: {
 			username: `gitlab/${project.name}`,
-			text: `${data.user_name} pushed ${data.total_commits_count} commits to branch [${branchParser(data.ref)}](${project.web_url}/commits/${branchParser(data.ref)}) in [${project.name}](${project.web_url})`,
+			text: `${data.user_name} pushed ${data.total_commits_count} commits to branch [${refParser(data.ref)}](${project.web_url}/commits/${refParser(data.ref)}) in [${project.name}](${project.web_url})`,
 			icon_url: project.avatar_url || data.user_avatar || '',
 			attachments: [
 				{
@@ -146,7 +145,7 @@ See: ${data.object_attributes.url}`,
 	}
 
 	tagEvent(data) {
-		let tag = tagParser(data.ref);
+		let tag = refParser(data.ref);
 		return {
 			content: {
 				username: `gitlab/${data.project.name}`,

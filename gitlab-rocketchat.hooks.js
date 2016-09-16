@@ -111,7 +111,7 @@ See: ${data.object_attributes.url}`,
         	  return {
 			  content: {
 				username: `gitlab/${project.name}`,
-				text: `${data.user_name} pushed new branch [${refParser(data.ref)}](${project.web_url}/commits/${refParser(data.ref)}) to [${project.name}](${project.web_url}), which is ${data.total_commits_count} commits ahaed of master`,
+				text: `${data.user_name} pushed new branch [${refParser(data.ref)}](${project.web_url}/commits/${refParser(data.ref)}) to [${project.name}](${project.web_url}), which is ${data.total_commits_count} commits ahead of master`,
 				icon_url: project.avatar_url || data.user_avatar || '',
 				attachments: []
 			  }

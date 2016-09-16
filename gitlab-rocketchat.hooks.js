@@ -7,7 +7,6 @@ class Script {
 	process_incoming_request({request}) {
         
 		try {
-          		//return this.logFullEvent(request);
 			switch(request.headers['x-gitlab-event']){
 				case 'Push Hook':
 					return this.pushEvent(request.content);
@@ -29,17 +28,6 @@ class Script {
 				}
 			};
 		}
-	}
-  
-	logFullEvent(data) {
-		return {
-			content: {
-				username: data.user.name,
-				text: `Data: '${JSON.stringify(data, null, 4)}'`,
-				icon_url: data.user.avatar_url,
-				attachments:[]
-			}
-		};
 	}
 
 	issueEvent(data) {

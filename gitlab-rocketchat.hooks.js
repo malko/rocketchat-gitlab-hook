@@ -7,18 +7,28 @@ class Script {
 	process_incoming_request({request}) {
         
 		try {
+			var result = null
 			switch(request.headers['x-gitlab-event']){
 				case 'Push Hook':
-					return this.pushEvent(request.content);
+					result = this.pushEvent(request.content);
+					break;
 				case 'Merge Request Hook':
-					return this.mergeRequestEvent(request.content);
+					result = this.mergeRequestEvent(request.content);
+					break;
 				case 'Note Hook':
-					return this.commentEvent(request.content);
+					result = this.commentEvent(request.content);
+					break;
 				case 'Issue Hook':
-					return this.issueEvent(request.content);
+					result = this.issueEvent(request.content);
+					break;
 				case 'Tag Push Hook':
-					return this.tagEvent(request.content);
+					result = this.tagEvent(request.content);
+					break;
 			}
+			var channel = request.url.query['channel']
+			if(channel)
+				result.content.channel = "#" + channel
+			return result  
 		} catch(e) {
 			console.log('gitlabevent error', e);
 			return {

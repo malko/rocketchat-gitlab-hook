@@ -17,19 +17,29 @@ const pushUniq = (array, val) => ~array.indexOf(val) || array.push(val); // esli
 class Script { // eslint-disable-line
 	process_incoming_request({ request }) {
 		try {
-			// return this.logFullEvent(request);
+			let result = null;
+			const channel = request.url.query.channel;
 			switch (request.headers['x-gitlab-event']) {
 				case 'Push Hook':
-					return this.pushEvent(request.content);
+					result = this.pushEvent(request.content);
+					break;
 				case 'Merge Request Hook':
-					return this.mergeRequestEvent(request.content);
+					result = this.mergeRequestEvent(request.content);
+					break;
 				case 'Note Hook':
-					return this.commentEvent(request.content);
+					result = this.commentEvent(request.content);
+					break;
 				case 'Issue Hook':
-					return this.issueEvent(request.content);
+					result = this.issueEvent(request.content);
+					break;
 				case 'Tag Push Hook':
-					return this.tagEvent(request.content);
+					result = this.tagEvent(request.content);
+					break;
 			}
+			if (result && result.content && channel) {
+				result.content.channel = '#' + channel;
+			}
+			return result;
 		} catch (e) {
 			console.log('gitlabevent error', e);
 			return {
@@ -39,17 +49,6 @@ class Script { // eslint-disable-line
 				}
 			};
 		}
-	}
-
-	logFullEvent(data) {
-		return {
-			content: {
-				username: data.user.name,
-				text: `Data: '${JSON.stringify(data, null, 4)}'`,
-				icon_url: data.user.avatar_url,
-				attachments: []
-			}
-		};
 	}
 
 	issueEvent(data) {

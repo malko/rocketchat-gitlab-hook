@@ -1,13 +1,24 @@
-/*jshint  esnext:true*/
+/* eslint no-console:0, max-len:0 */
 // see https://gitlab.com/help/web_hooks/web_hooks for full json posted by GitLab
 const NOTIF_COLOR = '#6498CC';
-const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/,'$1');
+const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
+const displayName = (name) => name.toLowerCase().replace(/\s+/g, '.');
+const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
+const makeAttachment = (author, text) => {
+	return {
+		author_name: author ? displayName(author.name) : '',
+		author_icon: author ? author.avatar_url : '',
+		text,
+		color: NOTIF_COLOR
+	};
+};
+const pushUniq = (array, val) => ~array.indexOf(val) || array.push(val); // eslint-disable-line
 
-class Script {
-	process_incoming_request({request}) {
-        
+class Script { // eslint-disable-line
+	process_incoming_request({ request }) {
 		try {
-			switch(request.headers['x-gitlab-event']){
+			// return this.logFullEvent(request);
+			switch (request.headers['x-gitlab-event']) {
 				case 'Push Hook':
 					return this.pushEvent(request.content);
 				case 'Merge Request Hook':
@@ -19,7 +30,7 @@ class Script {
 				case 'Tag Push Hook':
 					return this.tagEvent(request.content);
 			}
-		} catch(e) {
+		} catch (e) {
 			console.log('gitlabevent error', e);
 			return {
 				error: {
@@ -30,15 +41,31 @@ class Script {
 		}
 	}
 
-	issueEvent(data) {
+	logFullEvent(data) {
 		return {
 			content: {
 				username: data.user.name,
-				text: `${data.user.username} ${data.object_attributes.state} an issue _${data.object_attributes.title}_ on ${data.project.name}.
-*Description:* ${data.object_attributes.description}.
-See: ${data.object_attributes.url}`,
+				text: `Data: '${JSON.stringify(data, null, 4)}'`,
 				icon_url: data.user.avatar_url,
-				attachments:[]
+				attachments: []
+			}
+		};
+	}
+
+	issueEvent(data) {
+		return {
+			content: {
+				username: 'gitlab/' + data.project.name,
+				icon_url: data.project.avatar_url || data.user.avatar_url || '',
+				text: (data.assignee && data.assignee.name !== data.user.name) ? atName(data.assignee) : '',
+				attachments: [
+					makeAttachment(
+						data.user,
+						`${data.object_attributes.state} an issue _${data.object_attributes.title}_ on ${data.project.name}.
+*Description:* ${data.object_attributes.description}.
+See: ${data.object_attributes.url}`
+					)
+				]
 			}
 		};
 	}
@@ -46,32 +73,39 @@ See: ${data.object_attributes.url}`,
 	commentEvent(data) {
 		const comment = data.object_attributes;
 		const user = data.user;
+		const at = [];
 		let text;
 		if (data.merge_request) {
-			let mr = data.merge_request;
-			text = `${user.name} commented on merge request #${mr.id} [${mr.title}](${comment.url})`;
-
+			const mr = data.merge_request;
+			const lastCommitAuthor = mr.last_commit && mr.last_commit.author;
+			if (mr.assignee && mr.assignee.name !== user.name) {
+				at.push(atName(mr.assignee));
+			}
+			if (lastCommitAuthor && lastCommitAuthor.name !== user.name) {
+				pushUniq(at, atName(lastCommitAuthor));
+			}
+			text = `commented on MR [#${mr.id} ${mr.title}](${comment.url})`;
 		} else if (data.commit) {
-			let commit = data.commit;
-			let message = commit.message.replace(/\n[^\s\S]+/, '...').replace(/\n$/,'');
-			text = `${user.name} commented on commit [${commit.id.slice(0, 8)} ${message}](${comment.url})`;
+			const commit = data.commit;
+			const message = commit.message.replace(/\n[^\s\S]+/, '...').replace(/\n$/, '');
+			if (commit.author && commit.author.name !== user.name) {
+				at.push(atName(commit.author));
+			}
+			text = `commented on commit [${commit.id.slice(0, 8)} ${message}](${comment.url})`;
 		} else if (data.issue) {
-			let issue = data.issue;
-			text = `${user.name} commented on issue [#${issue.id} ${issue.title}](${comment.url})`;
+			const issue = data.issue;
+			text = `commented on issue [#${issue.id} ${issue.title}](${comment.url})`;
 		} else if (data.snippet) {
-			let snippet = data.snippet;
-			text = `${user.name} commented on code snippet [#${snippet.id} ${snippet.title}](${comment.url})`;
+			const snippet = data.snippet;
+			text = `commented on code snippet [#${snippet.id} ${snippet.title}](${comment.url})`;
 		}
 		return {
 			content: {
 				username: 'gitlab/' + data.project.name,
 				icon_url: data.project.avatar_url || user.avatar_url || '',
-				text,
+				text: at.join(' '),
 				attachments: [
-					{
-						text: comment.note,
-						color: NOTIF_COLOR
-					}
+					makeAttachment(user, `${text}\n${comment.note}`)
 				]
 			}
 		};
@@ -80,16 +114,27 @@ See: ${data.object_attributes.url}`,
 	mergeRequestEvent(data) {
 		const user = data.user;
 		const mr = data.object_attributes;
+		const assignee = mr.assignee;
+		let at = [];
+
+		if (mr.action === 'open' && assignee) {
+			at = '\n' + atName(assignee);
+		} else if (mr.action === 'merge') {
+			const lastCommitAuthor = mr.last_commit && mr.last_commit.author;
+			if (assignee && assignee.name !== user.name) {
+				at.push(atName(assignee));
+			}
+			if (lastCommitAuthor && lastCommitAuthor.name !== user.name) {
+				pushUniq(at, atName(lastCommitAuthor));
+			}
+		}
 		return {
 			content: {
 				username: `gitlab/${mr.target.name}`,
 				icon_url: mr.target.avatar_url || mr.source.avatar_url || user.avatar_url || '',
-				text: `${user.name} ${mr.action} Merge Request [#${mr.iid} ${mr.title}](${mr.url})`,
+				text: at.join(' '),
 				attachments: [
-					{
-						text: `${mr.source_branch} into ${mr.target_branch}`,
-						color: NOTIF_COLOR
-					}
+					makeAttachment(user, `${mr.action} MR [#${mr.iid} ${mr.title}](${mr.url})\n${mr.source_branch} into ${mr.target_branch}`)
 				]
 			}
 		};
@@ -97,48 +142,62 @@ See: ${data.object_attributes.url}`,
 
 	pushEvent(data) {
 		const project = data.project;
+		const user = {
+			name: data.user_name,
+			avatar_url: data.user_avatar
+		};
+		// branch removal
 		if (data.checkout_sha === null && !data.commits.length) {
 			return {
 				content: {
 					username: `gitlab/${project.name}`,
-					text: `${data.user_name} removed branch ${refParser(data.ref)} from [${project.name}](${project.web_url})`,
 					icon_url: project.avatar_url || data.user_avatar || '',
-					attachments:[]
+					attachments: [
+						makeAttachment(user, `removed branch ${refParser(data.ref)} from [${project.name}](${project.web_url})`)
+					]
 				}
 			};
 		}
-        	if (data.before == 0) {
-        	  return {
-			  content: {
-				username: `gitlab/${project.name}`,
-				text: `${data.user_name} pushed new branch [${refParser(data.ref)}](${project.web_url}/commits/${refParser(data.ref)}) to [${project.name}](${project.web_url}), which is ${data.total_commits_count} commits ahead of master`,
-				icon_url: project.avatar_url || data.user_avatar || '',
-				attachments: []
-			  }
-		        };
-        	}
-		return {
-		  content: {
-			username: `gitlab/${project.name}`,
-			text: `${data.user_name} pushed ${data.total_commits_count} commits to branch [${refParser(data.ref)}](${project.web_url}/commits/${refParser(data.ref)}) in [${project.name}](${project.web_url})`,
-			icon_url: project.avatar_url || data.user_avatar || '',
-			attachments: [
-				{
-					text: data.commits.map((commit) => `  - ${new Date(commit.timestamp).toUTCString()} [${commit.id.slice(0, 8)}](${commit.url}) by ${commit.author.name}: ${commit.message.replace(/\s*$/, '')}`).join('\n'),
-					color: NOTIF_COLOR
+		// new branch
+		if (data.before == 0) { // eslint-disable-line
+			return {
+				content: {
+					username: `gitlab/${project.name}`,
+					icon_url: project.avatar_url || data.user_avatar || '',
+					attachments: [
+						makeAttachment(user, `pushed new branch [${refParser(data.ref)}](${project.web_url}/commits/${refParser(data.ref)}) to [${project.name}](${project.web_url}), which is ${data.total_commits_count} commits ahead of master`)
+					]
 				}
-			]
-		  }
+			};
+		}
+		return {
+			content: {
+				username: `gitlab/${project.name}`,
+				icon_url: project.avatar_url || data.user_avatar || '',
+				attachments: [
+					makeAttachment(user, `pushed ${data.total_commits_count} commits to branch [${refParser(data.ref)}](${project.web_url}/commits/${refParser(data.ref)}) in [${project.name}](${project.web_url})`),
+					{
+						text: data.commits.map((commit) => `  - ${new Date(commit.timestamp).toUTCString()} [${commit.id.slice(0, 8)}](${commit.url}) by ${commit.author.name}: ${commit.message.replace(/\s*$/, '')}`).join('\n'),
+						color: NOTIF_COLOR
+					}
+				]
+			}
 		};
 	}
 
 	tagEvent(data) {
-		let tag = refParser(data.ref);
+		const tag = refParser(data.ref);
 		return {
 			content: {
 				username: `gitlab/${data.project.name}`,
 				icon_url: data.project.avatar_url || data.user_avatar || '',
-				text: `${data.user_name} push tag [${tag} ${data.checkout_sha.slice(0,8)}](${data.project.web_url}/tags/${tag})`
+				text: '@all',
+				attachments: [
+					makeAttachment(
+						{ name: data.user_name, avatar_url: data.user_avatar },
+						`push tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`
+					)
+				]
 			}
 		};
 	}

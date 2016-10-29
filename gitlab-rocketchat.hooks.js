@@ -53,12 +53,12 @@ class Script { // eslint-disable-line
 	createErrorChatMessage(error) {
 		return {
 			content: {
-				username: 'RocketBot Error Handler',
-				text: `Error occured while parsing the webhook request:`,
+				username: 'Rocket.Cat ErrorHandler',
+				text: `Error occured while parsing an incoming webhook request. Details attached.`,
 				icon_url: '',
 				attachments:[
 					{
-						text: `Error: '${e}', \n Message: '${e.message}', \n Stack: '$e.stack'`,
+						text: `Error: '${error}', \n Message: '${error.message}', \n Stack: '${error.stack}'`,
 						color: NOTIF_COLOR
 					}
 				]
@@ -71,7 +71,7 @@ class Script { // eslint-disable-line
 			content: {
 				username: data.user ? data.user.name : (data.user_name || 'Unknown user'),
 				text: `Unknown event '${event}' occured. Data attached.`,
-				icon_url: data.user ? data.user.avatar_url : (data.user_avatar || "Unknown icon"),
+				icon_url: data.user ? data.user.avatar_url : (data.user_avatar || ``),
 				attachments:[
 					{
 						text: `${JSON.stringify(data, null, 4)}`,

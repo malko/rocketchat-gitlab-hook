@@ -19,7 +19,8 @@ class Script { // eslint-disable-line
 		try {
 			let result = null;
 			const channel = request.url.query.channel;
-			switch (request.headers['x-gitlab-event']) {
+			var event = request.headers['x-gitlab-event'];
+			switch (event) {
 				case 'Push Hook':
 					result = this.pushEvent(request.content);
 					break;
@@ -35,6 +36,9 @@ class Script { // eslint-disable-line
 				case 'Tag Push Hook':
 					result = this.tagEvent(request.content);
 					break;
+				default:
+					result=this.unknownEvent(request, event);
+					break;
 			}
 			if (result && result.content && channel) {
 				result.content.channel = '#' + channel;
@@ -42,13 +46,40 @@ class Script { // eslint-disable-line
 			return result;
 		} catch (e) {
 			console.log('gitlabevent error', e);
-			return {
-				error: {
-					success: false,
-					message: e.message || e
-				}
-			};
+			return this.createErrorChatMessage(e);
 		}
+	}
+    
+	createErrorChatMessage(error) {
+		return {
+			content: {
+				username: 'RocketBot Error Handler',
+				text: `Error occured while parsing the webhook request:`,
+				icon_url: '',
+				attachments:[
+					{
+						text: `Error: '${e}', \n Message: '${e.message}', \n Stack: '$e.stack'`,
+						color: NOTIF_COLOR
+					}
+				]
+			}
+		};
+	}
+  
+	unknownEvent(data, event) {
+		return {
+			content: {
+				username: data.user ? data.user.name : (data.user_name || 'Unknown user'),
+				text: `Unknown event '${event}' occured. Data attached.`,
+				icon_url: data.user ? data.user.avatar_url : (data.user_avatar || "Unknown icon"),
+				attachments:[
+					{
+						text: `${JSON.stringify(data, null, 4)}`,
+						color: NOTIF_COLOR
+					}
+				]
+			}
+		};
 	}
 
 	issueEvent(data) {
@@ -186,16 +217,17 @@ See: ${data.object_attributes.url}`
 
 	tagEvent(data) {
 		const tag = refParser(data.ref);
+		const user = {
+			name: data.user_name,
+			avatar_url: data.user_avatar
+		};
+      	
 		return {
 			content: {
 				username: `gitlab/${data.project.name}`,
 				icon_url: data.project.avatar_url || data.user_avatar || '',
-				text: '@all',
 				attachments: [
-					makeAttachment(
-						{ name: data.user_name, avatar_url: data.user_avatar },
-						`push tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`
-					)
+					makeAttachment(user,`pushed tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`)
 				]
 			}
 		};

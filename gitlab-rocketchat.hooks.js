@@ -1,5 +1,6 @@
 /* eslint no-console:0, max-len:0 */
 // see https://gitlab.com/help/web_hooks/web_hooks for full json posted by GitLab
+const MENTION_ALL_ALLOWED = false; // <- check that bot permission allow has mention-all before passing this to true.
 const NOTIF_COLOR = '#6498CC';
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
 const displayName = (name) => name.toLowerCase().replace(/\s+/g, '.');
@@ -226,6 +227,7 @@ See: ${data.object_attributes.url}`
 			content: {
 				username: `gitlab/${data.project.name}`,
 				icon_url: data.project.avatar_url || data.user_avatar || '',
+				text: MENTION_ALL_ALLOWED ? '@all' : '',
 				attachments: [
 					makeAttachment(user, `pushed tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`)
 				]

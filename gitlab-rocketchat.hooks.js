@@ -19,7 +19,7 @@ class Script { // eslint-disable-line
 		try {
 			let result = null;
 			const channel = request.url.query.channel;
-			var event = request.headers['x-gitlab-event'];
+			const event = request.headers['x-gitlab-event'];
 			switch (event) {
 				case 'Push Hook':
 					result = this.pushEvent(request.content);
@@ -37,7 +37,7 @@ class Script { // eslint-disable-line
 					result = this.tagEvent(request.content);
 					break;
 				default:
-					result=this.unknownEvent(request, event);
+					result = this.unknownEvent(request, event);
 					break;
 			}
 			if (result && result.content && channel) {
@@ -49,14 +49,14 @@ class Script { // eslint-disable-line
 			return this.createErrorChatMessage(e);
 		}
 	}
-    
+
 	createErrorChatMessage(error) {
 		return {
 			content: {
 				username: 'Rocket.Cat ErrorHandler',
-				text: `Error occured while parsing an incoming webhook request. Details attached.`,
+				text: 'Error occured while parsing an incoming webhook request. Details attached.',
 				icon_url: '',
-				attachments:[
+				attachments: [
 					{
 						text: `Error: '${error}', \n Message: '${error.message}', \n Stack: '${error.stack}'`,
 						color: NOTIF_COLOR
@@ -65,14 +65,14 @@ class Script { // eslint-disable-line
 			}
 		};
 	}
-  
+
 	unknownEvent(data, event) {
 		return {
 			content: {
 				username: data.user ? data.user.name : (data.user_name || 'Unknown user'),
 				text: `Unknown event '${event}' occured. Data attached.`,
-				icon_url: data.user ? data.user.avatar_url : (data.user_avatar || ``),
-				attachments:[
+				icon_url: data.user ? data.user.avatar_url : (data.user_avatar || ''),
+				attachments: [
 					{
 						text: `${JSON.stringify(data, null, 4)}`,
 						color: NOTIF_COLOR
@@ -221,13 +221,13 @@ See: ${data.object_attributes.url}`
 			name: data.user_name,
 			avatar_url: data.user_avatar
 		};
-      	
+
 		return {
 			content: {
 				username: `gitlab/${data.project.name}`,
 				icon_url: data.project.avatar_url || data.user_avatar || '',
 				attachments: [
-					makeAttachment(user,`pushed tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`)
+					makeAttachment(user, `pushed tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`)
 				]
 			}
 		};

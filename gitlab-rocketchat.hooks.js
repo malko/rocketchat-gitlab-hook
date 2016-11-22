@@ -82,8 +82,20 @@ class Script { // eslint-disable-line
 			}
 		};
 	}
-
 	issueEvent(data) {
+		const state = data.object_attributes.state;
+		const action = data.object_attributes.action;
+		let user_action = state;
+		let assigned = '';
+
+		if (action === 'update') {
+			user_action = 'updated';
+		}
+
+		if (data.assignee) {
+			assigned = `*Assigned to*: @${data.assignee.username}\n`;
+		}
+
 		return {
 			content: {
 				username: 'gitlab/' + data.project.name,
@@ -91,9 +103,9 @@ class Script { // eslint-disable-line
 				text: (data.assignee && data.assignee.name !== data.user.name) ? atName(data.assignee) : '',
 				attachments: [
 					makeAttachment(
-						data.user,
-						`${data.object_attributes.state} an issue _${data.object_attributes.title}_ on ${data.project.name}.
+						data.user, `${user_action} an issue _${data.object_attributes.title}_ on ${data.project.name}.
 *Description:* ${data.object_attributes.description}.
+${assigned}
 See: ${data.object_attributes.url}`
 					)
 				]

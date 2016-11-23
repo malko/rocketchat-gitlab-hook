@@ -3,7 +3,7 @@
 const MENTION_ALL_ALLOWED = false; // <- check that bot permission allow has mention-all before passing this to true.
 const NOTIF_COLOR = '#6498CC';
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
-const displayName = (name) => name.toLowerCase().replace(/\s+/g, '.');
+const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.'));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
 const makeAttachment = (author, text) => {
 	return {
@@ -36,6 +36,12 @@ class Script { // eslint-disable-line
 					break;
 				case 'Tag Push Hook':
 					result = this.tagEvent(request.content);
+					break;
+				case 'Pipeline Hook':
+					result = this.pipelineEvent(request.content);
+					break;
+				case 'Build Hook':
+					result = this.buildEvent(request.content);
 					break;
 				default:
 					result = this.unknownEvent(request, event);
@@ -242,6 +248,42 @@ See: ${data.object_attributes.url}`
 				text: MENTION_ALL_ALLOWED ? '@all' : '',
 				attachments: [
 					makeAttachment(user, `pushed tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`)
+				]
+			}
+		};
+	}
+
+	pipelineEvent(data) {
+		const commit = data.commit;
+		const user = {
+			name: data.user_name,
+			avatar_url: data.user_avatar
+		};
+		const pipeline = data.object_attributes;
+
+		return {
+			content: {
+				username: `gitlab/${data.project.name}`,
+				icon_url: data.project.avatar_url || data.user_avatar || '',
+				attachments: [
+					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`)
+				]
+			}
+		};
+	}
+
+	buildEvent(data) {
+		const user = {
+			name: data.user_name,
+			avatar_url: data.user_avatar
+		};
+
+		return {
+			content: {
+				username: `gitlab/${data.repository.name}`,
+				icon_url: '',
+				attachments: [
+					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`)
 				]
 			}
 		};

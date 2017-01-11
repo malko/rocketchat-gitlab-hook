@@ -240,14 +240,19 @@ See: ${data.object_attributes.url}`
 			name: data.user_name,
 			avatar_url: data.user_avatar
 		};
-
+		let message;
+		if (data.checkout_sha === null) {
+			message = `deleted tag [${tag}](${data.project.web_url}/tags/)`;
+		} else {
+			message = `pushed tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`;
+		}
 		return {
 			content: {
 				username: `gitlab/${data.project.name}`,
 				icon_url: data.project.avatar_url || data.user_avatar || '',
 				text: MENTION_ALL_ALLOWED ? '@all' : '',
 				attachments: [
-					makeAttachment(user, `pushed tag [${tag} ${data.checkout_sha.slice(0, 8)}](${data.project.web_url}/tags/${tag})`)
+					makeAttachment(user, message)
 				]
 			}
 		};

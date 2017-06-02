@@ -5,12 +5,12 @@ const NOTIF_COLOR = '#6498CC';
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
 const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.'));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
-const makeAttachment = (author, text) => {
+const makeAttachment = (author, text, color) => {
 	return {
 		author_name: author ? displayName(author.name) : '',
 		author_icon: author ? author.avatar_url : '',
 		text,
-		color: NOTIF_COLOR
+		color: color || NOTIF_COLOR
 	};
 };
 const pushUniq = (array, val) => ~array.indexOf(val) || array.push(val); // eslint-disable-line
@@ -262,6 +262,25 @@ See: ${data.object_attributes.url}`
 			}
 		};
 	}
+	
+	createColor(status) {
+		switch (status) {
+			case "success":
+			    	return "#2faa60";
+		  	case "pending":
+			    	return "#e75e40";
+	  		case "failed":
+			    	return "#d22852";
+		  	case "canceled":
+			    	return "#5c5c5c";
+		  	case "created":
+			    	return "#ffc107";
+		  	case "running":
+			    	return "#607d8b";
+			default:
+				return null;
+	      	}
+	}
 
 	pipelineEvent(data) {
 		const project = data.project || data.repository;
@@ -277,7 +296,7 @@ See: ${data.object_attributes.url}`
 				username: `gitlab/${project.name}`,
 				icon_url: project.avatar_url || data.user_avatar || '',
 				attachments: [
-					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`)
+					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`, this.createColor(pipeline.status))
 				]
 			}
 		};
@@ -294,7 +313,7 @@ See: ${data.object_attributes.url}`
 				username: `gitlab/${data.repository.name}`,
 				icon_url: '',
 				attachments: [
-					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`)
+					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`, this.createColor(data.build_status))
 				]
 			}
 		};

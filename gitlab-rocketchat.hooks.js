@@ -2,6 +2,7 @@
 // see https://gitlab.com/help/web_hooks/web_hooks for full json posted by GitLab
 const MENTION_ALL_ALLOWED = false; // <- check that bot permission allow has mention-all before passing this to true.
 const NOTIF_COLOR = '#6498CC';
+const IGNORE_CONFIDENTIAL = true;
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
 const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.'));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
@@ -31,8 +32,9 @@ class Script { // eslint-disable-line
 				case 'Note Hook':
 					result = this.commentEvent(request.content);
 					break;
+				case 'Confidential Issue Hook':
 				case 'Issue Hook':
-					result = this.issueEvent(request.content);
+					result = this.issueEvent(request.content, event);
 					break;
 				case 'Tag Push Hook':
 					result = this.tagEvent(request.content);
@@ -91,7 +93,10 @@ class Script { // eslint-disable-line
 			}
 		};
 	}
-	issueEvent(data) {
+	issueEvent(data, event) {
+		if (event === 'Confidential Issue Hook' && IGNORE_CONFIDENTIAL) {
+			return false;
+		}
 		const project = data.project || data.repository;
 		const state = data.object_attributes.state;
 		const action = data.object_attributes.action;

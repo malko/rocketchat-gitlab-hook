@@ -43,6 +43,9 @@ class Script { // eslint-disable-line
 				case 'Build Hook':
 					result = this.buildEvent(request.content);
 					break;
+				case 'Wiki Page Hook':
+					result = this.wikiEvent(request.content);
+					break;
 				default:
 					result = this.unknownEvent(request, event);
 					break;
@@ -262,24 +265,24 @@ See: ${data.object_attributes.url}`
 			}
 		};
 	}
-	
+
 	createColor(status) {
 		switch (status) {
-			case "success":
-			    	return "#2faa60";
-		  	case "pending":
-			    	return "#e75e40";
-	  		case "failed":
-			    	return "#d22852";
-		  	case "canceled":
-			    	return "#5c5c5c";
-		  	case "created":
-			    	return "#ffc107";
-		  	case "running":
-			    	return "#607d8b";
+			case 'success':
+				return '#2faa60';
+			case 'pending':
+				return '#e75e40';
+			case 'failed':
+				return '#d22852';
+			case 'canceled':
+				return '#5c5c5c';
+			case 'created':
+				return '#ffc107';
+			case 'running':
+				return '#607d8b';
 			default:
 				return null;
-	      	}
+		}
 	}
 
 	pipelineEvent(data) {
@@ -315,6 +318,41 @@ See: ${data.object_attributes.url}`
 				attachments: [
 					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`, this.createColor(data.build_status))
 				]
+			}
+		};
+	}
+
+	wikiPageTitle(wiki_page) {
+		if (wiki_page.action === 'delete') {
+			return wiki_page.title;
+		}
+
+		return `[${wiki_page.title}](${wiki_page.url})`;
+	}
+
+	wikiEvent(data) {
+		const user_name = data.user.name;
+		const project = data.project;
+		const project_path = project.path_with_namespace;
+		const wiki_page = data.object_attributes;
+		const wiki_page_title = this.wikiPageTitle(wiki_page);
+		const action = wiki_page.action;
+
+		let user_action = 'modified';
+
+		if (action === 'create') {
+			user_action = 'created';
+		} else if (action === 'update') {
+			user_action = 'edited';
+		} else if (action === 'delete') {
+			user_action = 'deleted';
+		}
+
+		return {
+			content: {
+				username: project_path,
+				icon_url: project.avatar_url || data.user.avatar_url || '',
+				text: `The wiki page ${wiki_page_title} was ${user_action} by ${user_name}`
 			}
 		};
 	}

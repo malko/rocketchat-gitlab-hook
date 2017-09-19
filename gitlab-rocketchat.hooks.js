@@ -40,6 +40,7 @@ class Script { // eslint-disable-line
 					result = this.tagEvent(request.content);
 					break;
 				case 'Pipeline Hook':
+				case 'Pipeline Event':
 					result = this.pipelineEvent(request.content);
 					break;
 				case 'Build Hook':

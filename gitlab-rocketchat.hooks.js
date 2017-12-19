@@ -377,7 +377,8 @@ See: ${data.object_attributes.url}`
 		switch (event_name) {
 			case 'project_create':
 			case 'project_destroy':
-				action = event_name === 'project_create' ? 'created' : 'removed';
+			case 'project_update':
+				action = event_name === 'project_create' ? 'created' : (event_name === 'project_create' ? 'removed' : 'updated');
 				text = `Project \`${data.path_with_namespace}\` ${action}.`
 				break;
 			case 'project_rename':
@@ -395,6 +396,10 @@ See: ${data.object_attributes.url}`
 				action = event_name === 'user_create' ? 'created' : 'removed';
 				text = `User \`${data.username}\` was ${action}.`
 				break;
+			case 'user_rename':
+				action = 'renamed';
+				text = `User \`${data.old_username}\` was ${action} to \`${data.username}\`.`
+				break;
 			case 'key_create':
 			case 'key_destroy':
 				action = event_name === 'key_create' ? 'created' : 'removed';
@@ -404,6 +409,10 @@ See: ${data.object_attributes.url}`
 			case 'group_destroy':
 				action = event_name === 'group_create' ? 'created' : 'removed';
 				text = `Group \`${data.path}\` was ${action}.`
+				break;
+			case 'group_rename':
+				action = 'renamed';
+				text = `Group \`${data.old_full_path}\` was ${action} to \`${data.full_path}\`.`
 				break;
 			case 'user_add_to_group':
 			case 'user_remove_from_group':

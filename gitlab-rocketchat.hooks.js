@@ -49,6 +49,9 @@ class Script { // eslint-disable-line
 				case 'Wiki Page Hook':
 					result = this.wikiEvent(request.content);
 					break;
+				case 'System Hook':
+					result = this.systemEvent(request.content);
+					break;
 				default:
 					result = this.unknownEvent(request, event);
 					break;
@@ -359,6 +362,65 @@ See: ${data.object_attributes.url}`
 				username: project_path,
 				icon_url: project.avatar_url || data.user.avatar_url || '',
 				text: `The wiki page ${wiki_page_title} was ${user_action} by ${user_name}`
+			}
+		};
+	}
+
+	systemEvent(data) {
+		const created_at = data.created_at;
+		const updated_at = data.updated_at;
+		const event_name = data.event_name;
+
+		let text = '';
+		let action = '';
+
+		switch (event_name) {
+			case 'project_create':
+			case 'project_destroy':
+				action = event_name === 'project_create' ? 'created' : 'removed';
+				text = `Project \`${data.path_with_namespace}\` ${action}.`
+				break;
+			case 'project_rename':
+			case 'project_transfer':
+				action = event_name === 'project_rename' ? 'renamed' : 'transferred';
+				text = `Project \`${data.old_path_with_namespace}\` ${action} to \`${data.path_with_namespace}\`.`
+				break;
+			case 'user_add_to_team':
+			case 'user_remove_from_team':
+				action = event_name === 'user_add_to_team' ? 'added' : 'removed';
+				text = `User \`${data.user_username}\` was ${action} to project \`${data.project_path_with_namespace}\` with \`${data.project_access}\` access.`
+				break;
+			case 'user_create':
+			case 'user_destroy':
+				action = event_name === 'user_create' ? 'created' : 'removed';
+				text = `User \`${data.username}\` was ${action}.`
+				break;
+			case 'key_create':
+			case 'key_destroy':
+				action = event_name === 'key_create' ? 'created' : 'removed';
+				text = `Key \`${data.username}\` was ${action}.`
+				break;
+			case 'group_create':
+			case 'group_destroy':
+				action = event_name === 'group_create' ? 'created' : 'removed';
+				text = `Group \`${data.path}\` was ${action}.`
+				break;
+			case 'user_add_to_group':
+			case 'user_remove_from_group':
+				action = event_name === 'user_add_to_group' ? 'added' : 'removed';
+				text = `User \`${data.user_username}\` was ${action} to group \`${data.group_path}\` with \`${data.group_access}\` access.`
+				break;
+		}
+
+		return {
+			content: {
+				text: `${text}`,
+				attachments: [
+					{
+						text: `${JSON.stringify(data, null, 4)}`,
+						color: NOTIF_COLOR
+					}
+				]
 			}
 		};
 	}

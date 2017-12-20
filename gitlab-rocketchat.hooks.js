@@ -367,58 +367,10 @@ See: ${data.object_attributes.url}`
 	}
 
 	systemEvent(data) {
-		const created_at = data.created_at;
-		const updated_at = data.updated_at;
-		const event_name = data.event_name;
-
-		let text = '';
-		let action = '';
-
-		switch (event_name) {
-			case 'project_create':
-			case 'project_destroy':
-			case 'project_update':
-				action = event_name === 'project_create' ? 'created' : (event_name === 'project_create' ? 'removed' : 'updated');
-				text = `Project \`${data.path_with_namespace}\` ${action}.`;
-				break;
-			case 'project_rename':
-			case 'project_transfer':
-				action = event_name === 'project_rename' ? 'renamed' : 'transferred';
-				text = `Project \`${data.old_path_with_namespace}\` ${action} to \`${data.path_with_namespace}\`.`;
-				break;
-			case 'user_add_to_team':
-			case 'user_remove_from_team':
-				action = event_name === 'user_add_to_team' ? 'added' : 'removed';
-				text = `User \`${data.user_username}\` was ${action} to project \`${data.project_path_with_namespace}\` with \`${data.project_access}\` access.`;
-				break;
-			case 'user_create':
-			case 'user_destroy':
-				action = event_name === 'user_create' ? 'created' : 'removed';
-				text = `User \`${data.username}\` was ${action}.`;
-				break;
-			case 'user_rename':
-				action = 'renamed';
-				text = `User \`${data.old_username}\` was ${action} to \`${data.username}\`.`;
-				break;
-			case 'key_create':
-			case 'key_destroy':
-				action = event_name === 'key_create' ? 'created' : 'removed';
-				text = `Key \`${data.username}\` was ${action}.`;
-				break;
-			case 'group_create':
-			case 'group_destroy':
-				action = event_name === 'group_create' ? 'created' : 'removed';
-				text = `Group \`${data.path}\` was ${action}.`;
-				break;
-			case 'group_rename':
-				action = 'renamed';
-				text = `Group \`${data.old_full_path}\` was ${action} to \`${data.full_path}\`.`;
-				break;
-			case 'user_add_to_group':
-			case 'user_remove_from_group':
-				action = event_name === 'user_add_to_group' ? 'added' : 'removed';
-				text = `User \`${data.user_username}\` was ${action} to group \`${data.group_path}\` with \`${data.group_access}\` access.`;
-				break;
+		const eventFunction = data.event_name.split('_')[0] + 'SystemEvent';
+		let text = eventFunction in this ? this[eventFunction](data) : data.event_name + ' system event unknown.';
+		if (text === '') {
+			text = data.event_name + ' system event unknown.';
 		}
 
 		return {
@@ -432,5 +384,78 @@ See: ${data.object_attributes.url}`
 				]
 			}
 		};
+	}
+
+	groupSystemEvent(data) {
+		const event_name = data.event_name;
+		let action = '';
+		switch (event_name) {
+			case 'group_create':
+			case 'group_destroy':
+				action = event_name === 'group_create' ? 'created' : 'removed';
+				return `Group \`${data.path}\` was ${action}.`;
+			case 'group_rename':
+				action = 'renamed';
+				return `Group \`${data.old_full_path}\` was ${action} to \`${data.full_path}\`.`;
+		}
+		return '';
+	}
+
+	keySystemEvent(data) {
+		const event_name = data.event_name;
+		let action = '';
+		switch (event_name) {
+			case 'key_create':
+			case 'key_destroy':
+				action = event_name === 'key_create' ? 'created' : 'removed';
+				return `Key \`${data.username}\` was ${action}.`;
+		}
+		return '';
+	}
+
+	projectSystemEvent(data) {
+		const event_name = data.event_name;
+		let action = '';
+		switch (event_name) {
+			case 'project_create':
+			case 'project_destroy':
+			case 'project_update':
+				if (event_name === 'project_create') {
+					action = 'created';
+				} else if (event_name === 'project_destroy') {
+					action = 'removed';
+				} else {
+					action = 'updated';
+				}
+				return `Project \`${data.path_with_namespace}\` ${action}.`;
+			case 'project_rename':
+			case 'project_transfer':
+				action = event_name === 'project_rename' ? 'renamed' : 'transferred';
+				return `Project \`${data.old_path_with_namespace}\` ${action} to \`${data.path_with_namespace}\`.`;
+		}
+		return '';
+	}
+
+	userSystemEvent(data) {
+		const event_name = data.event_name;
+		let action = '';
+		switch (event_name) {
+			case 'user_add_to_team':
+			case 'user_remove_from_team':
+				action = event_name === 'user_add_to_team' ? 'added' : 'removed';
+				return `User \`${data.user_username}\` was ${action} to project \`${data.project_path_with_namespace}\` with \`${data.project_access}\` access.`;
+			case 'user_create':
+			case 'user_destroy':
+				action = event_name === 'user_create' ? 'created' : 'removed';
+				return `User \`${data.username}\` was ${action}.`;
+			case 'user_rename':
+				action = 'renamed';
+				return `User \`${data.old_username}\` was ${action} to \`${data.username}\`.`;
+			case 'user_add_to_group':
+			case 'user_remove_from_group':
+				action = event_name === 'user_add_to_group' ? 'added' : 'removed';
+				return `User \`${data.user_username}\` was ${action} to group \`${data.group_path}\` with \`${data.group_access}\` access.`;
+		}
+		return '';
 	}
 }

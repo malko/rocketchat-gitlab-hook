@@ -379,45 +379,45 @@ See: ${data.object_attributes.url}`
 			case 'project_destroy':
 			case 'project_update':
 				action = event_name === 'project_create' ? 'created' : (event_name === 'project_create' ? 'removed' : 'updated');
-				text = `Project \`${data.path_with_namespace}\` ${action}.`
+				text = `Project \`${data.path_with_namespace}\` ${action}.`;
 				break;
 			case 'project_rename':
 			case 'project_transfer':
 				action = event_name === 'project_rename' ? 'renamed' : 'transferred';
-				text = `Project \`${data.old_path_with_namespace}\` ${action} to \`${data.path_with_namespace}\`.`
+				text = `Project \`${data.old_path_with_namespace}\` ${action} to \`${data.path_with_namespace}\`.`;
 				break;
 			case 'user_add_to_team':
 			case 'user_remove_from_team':
 				action = event_name === 'user_add_to_team' ? 'added' : 'removed';
-				text = `User \`${data.user_username}\` was ${action} to project \`${data.project_path_with_namespace}\` with \`${data.project_access}\` access.`
+				text = `User \`${data.user_username}\` was ${action} to project \`${data.project_path_with_namespace}\` with \`${data.project_access}\` access.`;
 				break;
 			case 'user_create':
 			case 'user_destroy':
 				action = event_name === 'user_create' ? 'created' : 'removed';
-				text = `User \`${data.username}\` was ${action}.`
+				text = `User \`${data.username}\` was ${action}.`;
 				break;
 			case 'user_rename':
 				action = 'renamed';
-				text = `User \`${data.old_username}\` was ${action} to \`${data.username}\`.`
+				text = `User \`${data.old_username}\` was ${action} to \`${data.username}\`.`;
 				break;
 			case 'key_create':
 			case 'key_destroy':
 				action = event_name === 'key_create' ? 'created' : 'removed';
-				text = `Key \`${data.username}\` was ${action}.`
+				text = `Key \`${data.username}\` was ${action}.`;
 				break;
 			case 'group_create':
 			case 'group_destroy':
 				action = event_name === 'group_create' ? 'created' : 'removed';
-				text = `Group \`${data.path}\` was ${action}.`
+				text = `Group \`${data.path}\` was ${action}.`;
 				break;
 			case 'group_rename':
 				action = 'renamed';
-				text = `Group \`${data.old_full_path}\` was ${action} to \`${data.full_path}\`.`
+				text = `Group \`${data.old_full_path}\` was ${action} to \`${data.full_path}\`.`;
 				break;
 			case 'user_add_to_group':
 			case 'user_remove_from_group':
 				action = event_name === 'user_add_to_group' ? 'added' : 'removed';
-				text = `User \`${data.user_username}\` was ${action} to group \`${data.group_path}\` with \`${data.group_access}\` access.`
+				text = `User \`${data.user_username}\` was ${action} to group \`${data.group_path}\` with \`${data.group_access}\` access.`;
 				break;
 		}
 

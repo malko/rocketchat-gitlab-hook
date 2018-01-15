@@ -3,6 +3,23 @@
 const MENTION_ALL_ALLOWED = false; // <- check that bot permission allow has mention-all before passing this to true.
 const NOTIF_COLOR = '#6498CC';
 const IGNORE_CONFIDENTIAL = true;
+const STATUSES_COLORS = {
+	success: '#2faa60',
+	pending: '#e75e40',
+	failed: '#d22852',
+	canceled: '#5c5c5c',
+	created: '#ffc107',
+	running: '#607d8b',
+};
+const ACTION_VERBS = {
+	create: 'created',
+	destroy: 'removed',
+	update: 'updated',
+	rename: 'renamed',
+	transfer: 'transferred',
+	add: 'added',
+	remove: 'removed',
+};
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
 const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.'));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
@@ -48,6 +65,9 @@ class Script { // eslint-disable-line
 					break;
 				case 'Wiki Page Hook':
 					result = this.wikiEvent(request.content);
+					break;
+				case 'System Hook':
+					result = this.systemEvent(request.content);
 					break;
 				default:
 					result = this.unknownEvent(request, event);
@@ -272,25 +292,6 @@ See: ${data.object_attributes.url}`
 		};
 	}
 
-	createColor(status) {
-		switch (status) {
-			case 'success':
-				return '#2faa60';
-			case 'pending':
-				return '#e75e40';
-			case 'failed':
-				return '#d22852';
-			case 'canceled':
-				return '#5c5c5c';
-			case 'created':
-				return '#ffc107';
-			case 'running':
-				return '#607d8b';
-			default:
-				return null;
-		}
-	}
-
 	pipelineEvent(data) {
 		const project = data.project || data.repository;
 		const commit = data.commit;
@@ -305,7 +306,7 @@ See: ${data.object_attributes.url}`
 				username: `gitlab/${project.name}`,
 				icon_url: project.avatar_url || data.user_avatar || '',
 				attachments: [
-					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`, this.createColor(pipeline.status))
+					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`, STATUSES_COLORS[pipeline.status])
 				]
 			}
 		};
@@ -322,7 +323,7 @@ See: ${data.object_attributes.url}`
 				username: `gitlab/${data.repository.name}`,
 				icon_url: '',
 				attachments: [
-					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`, this.createColor(data.build_status))
+					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`, STATUSES_COLORS[data.build_status])
 				]
 			}
 		};
@@ -342,23 +343,72 @@ See: ${data.object_attributes.url}`
 		const project_path = project.path_with_namespace;
 		const wiki_page = data.object_attributes;
 		const wiki_page_title = this.wikiPageTitle(wiki_page);
-		const action = wiki_page.action;
-
-		let user_action = 'modified';
-
-		if (action === 'create') {
-			user_action = 'created';
-		} else if (action === 'update') {
-			user_action = 'edited';
-		} else if (action === 'delete') {
-			user_action = 'deleted';
-		}
+		const user_action = ACTION_VERBS[wiki_page.action] || 'modified';
 
 		return {
 			content: {
 				username: project_path,
 				icon_url: project.avatar_url || data.user.avatar_url || '',
 				text: `The wiki page ${wiki_page_title} was ${user_action} by ${user_name}`
+			}
+		};
+	}
+
+	systemEvent(data) {
+		const event_name = data.event_name;
+		const [, eventType] = data.event_name.split('_');
+		const action = eventType in ACTION_VERBS ? ACTION_VERBS[eventType] : '';
+		let text = '';
+		switch (event_name) {
+			case 'project_create':
+			case 'project_destroy':
+			case 'project_update':
+				text = `Project \`${data.path_with_namespace}\` ${action}.`;
+				break;
+			case 'project_rename':
+			case 'project_transfer':
+				text = `Project \`${data.old_path_with_namespace}\` ${action} to \`${data.path_with_namespace}\`.`;
+				break;
+			case 'user_add_to_team':
+			case 'user_remove_from_team':
+				text = `User \`${data.user_username}\` was ${action} to project \`${data.project_path_with_namespace}\` with \`${data.project_access}\` access.`;
+				break;
+			case 'user_add_to_group':
+			case 'user_remove_from_group':
+				text = `User \`${data.user_username}\` was ${action} to group \`${data.group_path}\` with \`${data.group_access}\` access.`;
+				break;
+			case 'user_create':
+			case 'user_destroy':
+				text = `User \`${data.username}\` was ${action}.`;
+				break;
+			case 'user_rename':
+				text = `User \`${data.old_username}\` was ${action} to \`${data.username}\`.`;
+				break;
+			case 'key_create':
+			case 'key_destroy':
+				text = `Key \`${data.username}\` was ${action}.`;
+				break;
+			case 'group_create':
+			case 'group_destroy':
+				text = `Group \`${data.path}\` was ${action}.`;
+				break;
+			case 'group_rename':
+				text = `Group \`${data.old_full_path}\` was ${action} to \`${data.full_path}\`.`;
+				break;
+			default:
+				text = 'Unknown system event';
+				break;
+		}
+
+		return {
+			content: {
+				text: `${text}`,
+				attachments: [
+					{
+						text: `${JSON.stringify(data, null, 4)}`,
+						color: NOTIF_COLOR
+					}
+				]
 			}
 		};
 	}

@@ -91,7 +91,7 @@
 		"no-useless-concat": "error",
 		"no-with": "error",
 		"complexity": [
-			"error",
+			"warn",
 			11
 		],
 		"no-empty-function": [

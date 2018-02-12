@@ -22,7 +22,7 @@ const ACTION_VERBS = {
 };
 const ATTACHMENT_TITLE_SIZE = 10; // Put 0 here to have not title as in previous versions
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
-const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.'));
+const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, ""));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
 const makeAttachment = (author, text, color) => {
 	const attachment = {

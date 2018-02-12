@@ -20,16 +20,22 @@ const ACTION_VERBS = {
 	add: 'added',
 	remove: 'removed',
 };
+const ATTACHMENT_TITLE_SIZE = 10; // Put 0 here to have not title as in previous versions
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
 const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.'));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
 const makeAttachment = (author, text, color) => {
-	return {
+	const attachment = {
 		author_name: author ? displayName(author.name) : '',
 		author_icon: author ? author.avatar_url : '',
 		text,
 		color: color || NOTIF_COLOR
 	};
+	if (ATTACHMENT_TITLE_SIZE > 0) {
+		attachment.title = text.substring(0, ATTACHMENT_TITLE_SIZE) + '...';
+	}
+
+	return attachment;
 };
 const pushUniq = (array, val) => ~array.indexOf(val) || array.push(val); // eslint-disable-line
 

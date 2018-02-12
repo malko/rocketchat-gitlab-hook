@@ -20,6 +20,7 @@ const ACTION_VERBS = {
 	add: 'added',
 	remove: 'removed',
 };
+const ATTACHMENT_TITLE_SIZE = 10;
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
 const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.'));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
@@ -27,6 +28,7 @@ const makeAttachment = (author, text, color) => {
 	return {
 		author_name: author ? displayName(author.name) : '',
 		author_icon: author ? author.avatar_url : '',
+		title: text.substring(0, ATTACHMENT_TITLE_SIZE) + '...',
 		text,
 		color: color || NOTIF_COLOR
 	};

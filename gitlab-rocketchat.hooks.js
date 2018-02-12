@@ -21,7 +21,7 @@ const ACTION_VERBS = {
 	remove: 'removed',
 };
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
-const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.'));
+const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, ""));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
 const makeAttachment = (author, text, color) => {
 	return {

@@ -1,8 +1,10 @@
-/* eslint no-console:0, max-len:0 */
+/* eslint no-console:0, max-len:0, complexity:0 */
 // see https://gitlab.com/help/web_hooks/web_hooks for full json posted by GitLab
-const MENTION_ALL_ALLOWED = false; // <- check that bot permission allow has mention-all before passing this to true.
+const MENTION_ALL_ALLOWED = false; // <- check that bot permission 'mention-all' are activated in rocketchat before passing this to true.
 const NOTIF_COLOR = '#6498CC';
 const IGNORE_CONFIDENTIAL = true;
+const IGNORE_UNKNOWN_EVENTS = false;
+const IGNORE_ERROR_MESSAGES = false;
 const STATUSES_COLORS = {
 	success: '#2faa60',
 	pending: '#e75e40',
@@ -22,7 +24,7 @@ const ACTION_VERBS = {
 };
 const ATTACHMENT_TITLE_SIZE = 10; // Put 0 here to have not title as in previous versions
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
-const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, ""));
+const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
 const makeAttachment = (author, text, color) => {
 	const attachment = {
@@ -76,7 +78,11 @@ class Script { // eslint-disable-line
 					result = this.systemEvent(request.content);
 					break;
 				default:
-					result = this.unknownEvent(request, event);
+					if (IGNORE_UNKNOWN_EVENTS) {
+						console.log('gitlabevent unknown', event);
+						return { error: { success: false, message: `unknonwn event ${event}` } };
+					}
+					result = IGNORE_UNKNOWN_EVENTS ? null : this.unknownEvent(request, event);
 					break;
 			}
 			if (result && result.content && channel) {
@@ -90,6 +96,9 @@ class Script { // eslint-disable-line
 	}
 
 	createErrorChatMessage(error) {
+		if (IGNORE_ERROR_MESSAGES) {
+			return { error: { success: false, message: `gitlabevent error: ${error.message}` } };
+		}
 		return {
 			content: {
 				username: 'Rocket.Cat ErrorHandler',

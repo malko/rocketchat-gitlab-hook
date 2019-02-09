@@ -26,10 +26,12 @@ const ATTACHMENT_TITLE_SIZE = 10; // Put 0 here to have not title as in previous
 const refParser = (ref) => ref.replace(/^refs\/(?:tags|heads)\/(.+)$/, '$1');
 const displayName = (name) => (name && name.toLowerCase().replace(/\s+/g, '.').normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
 const atName = (user) => (user && user.name ? '@' + displayName(user.name) : '');
-const makeAttachment = (author, text, color) => {
+const makeAttachment = (author, text, timestamp, color) => {
+	const currentTime = (new Date()).toISOString();
 	const attachment = {
 		author_name: author ? displayName(author.name) : '',
 		author_icon: author ? author.avatar_url : '',
+		ts: timestamp || currentTime,
 		text,
 		color: color || NOTIF_COLOR
 	};
@@ -136,6 +138,7 @@ class Script { // eslint-disable-line
 		const project = data.project || data.repository;
 		const state = data.object_attributes.state;
 		const action = data.object_attributes.action;
+		const time = data.object_attributes.updated_at;
 		let user_action = state;
 		let assigned = '';
 
@@ -154,10 +157,12 @@ class Script { // eslint-disable-line
 				text: (data.assignee && data.assignee.name !== data.user.name) ? atName(data.assignee) : '',
 				attachments: [
 					makeAttachment(
-						data.user, `${user_action} an issue _${data.object_attributes.title}_ on ${project.name}.
+						data.user,
+						`${user_action} an issue _${data.object_attributes.title}_ on ${project.name}.
 *Description:* ${data.object_attributes.description}.
 ${assigned}
-See: ${data.object_attributes.url}`
+See: ${data.object_attributes.url}`,
+						time
 					)
 				]
 			}
@@ -200,7 +205,7 @@ See: ${data.object_attributes.url}`
 				icon_url: project.avatar_url || user.avatar_url || '',
 				text: at.join(' '),
 				attachments: [
-					makeAttachment(user, `${text}\n${comment.note}`)
+					makeAttachment(user, `${text}\n${comment.note}`, comment.updated_at)
 				]
 			}
 		};
@@ -229,7 +234,7 @@ See: ${data.object_attributes.url}`
 				icon_url: mr.target.avatar_url || mr.source.avatar_url || user.avatar_url || '',
 				text: at.join(' '),
 				attachments: [
-					makeAttachment(user, `${mr.action} MR [#${mr.iid} ${mr.title}](${mr.url})\n${mr.source_branch} into ${mr.target_branch}`)
+					makeAttachment(user, `${mr.action} MR [#${mr.iid} ${mr.title}](${mr.url})\n${mr.source_branch} into ${mr.target_branch}`, mr.updated_at)
 				]
 			}
 		};
@@ -315,13 +320,14 @@ See: ${data.object_attributes.url}`
 			avatar_url: data.user_avatar
 		};
 		const pipeline = data.object_attributes;
+		const pipeline_time = pipeline.finished_at || pipeline.created_at;
 
 		return {
 			content: {
 				username: `gitlab/${project.name}`,
 				icon_url: project.avatar_url || data.user_avatar || '',
 				attachments: [
-					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`, STATUSES_COLORS[pipeline.status])
+					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`, pipeline_time, STATUSES_COLORS[pipeline.status])
 				]
 			}
 		};
@@ -338,7 +344,7 @@ See: ${data.object_attributes.url}`
 				username: `gitlab/${data.repository.name}`,
 				icon_url: '',
 				attachments: [
-					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`, STATUSES_COLORS[data.build_status])
+					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`, null, STATUSES_COLORS[data.build_status])
 				]
 			}
 		};

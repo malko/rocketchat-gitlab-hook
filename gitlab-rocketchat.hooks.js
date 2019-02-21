@@ -5,6 +5,8 @@ const NOTIF_COLOR = '#6498CC';
 const IGNORE_CONFIDENTIAL = true;
 const IGNORE_UNKNOWN_EVENTS = false;
 const IGNORE_ERROR_MESSAGES = false;
+const USE_ROCKETCHAT_AVATAR = false;
+const DEFAULT_AVATAR = null; // <- null means use the avatar from settings if no other is available
 const STATUSES_COLORS = {
 	success: '#2faa60',
 	pending: '#e75e40',
@@ -105,7 +107,7 @@ class Script { // eslint-disable-line
 			content: {
 				username: 'Rocket.Cat ErrorHandler',
 				text: 'Error occured while parsing an incoming webhook request. Details attached.',
-				icon_url: '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : DEFAULT_AVATAR,
 				attachments: [
 					{
 						text: `Error: '${error}', \n Message: '${error.message}', \n Stack: '${error.stack}'`,
@@ -117,11 +119,12 @@ class Script { // eslint-disable-line
 	}
 
 	unknownEvent(data, event) {
+		const user_avatar = data.user ? data.user.avatar_url : (data.user_avatar || DEFAULT_AVATAR);
 		return {
 			content: {
 				username: data.user ? data.user.name : (data.user_name || 'Unknown user'),
 				text: `Unknown event '${event}' occured. Data attached.`,
-				icon_url: data.user ? data.user.avatar_url : (data.user_avatar || ''),
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : user_avatar,
 				attachments: [
 					{
 						text: `${JSON.stringify(data, null, 4)}`,
@@ -139,6 +142,7 @@ class Script { // eslint-disable-line
 		const state = data.object_attributes.state;
 		const action = data.object_attributes.action;
 		const time = data.object_attributes.updated_at;
+		const project_avatar = project.avatar_url || data.user.avatar_url || DEFAULT_AVATAR;
 		let user_action = state;
 		let assigned = '';
 
@@ -153,7 +157,7 @@ class Script { // eslint-disable-line
 		return {
 			content: {
 				username: 'gitlab/' + project.name,
-				icon_url: project.avatar_url || data.user.avatar_url || '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : project_avatar,
 				text: (data.assignee && data.assignee.name !== data.user.name) ? atName(data.assignee) : '',
 				attachments: [
 					makeAttachment(
@@ -173,6 +177,7 @@ See: ${data.object_attributes.url}`,
 		const project = data.project || data.repository;
 		const comment = data.object_attributes;
 		const user = data.user;
+		const avatar = project.avatar_url || user.avatar_url || DEFAULT_AVATAR;
 		const at = [];
 		let text;
 		if (data.merge_request) {
@@ -202,7 +207,7 @@ See: ${data.object_attributes.url}`,
 		return {
 			content: {
 				username: 'gitlab/' + project.name,
-				icon_url: project.avatar_url || user.avatar_url || '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				text: at.join(' '),
 				attachments: [
 					makeAttachment(user, `${text}\n${comment.note}`, comment.updated_at)
@@ -215,6 +220,7 @@ See: ${data.object_attributes.url}`,
 		const user = data.user;
 		const mr = data.object_attributes;
 		const assignee = mr.assignee;
+		const avatar = mr.target.avatar_url || mr.source.avatar_url || user.avatar_url || DEFAULT_AVATAR;
 		let at = [];
 
 		if (mr.action === 'open' && assignee) {
@@ -231,7 +237,7 @@ See: ${data.object_attributes.url}`,
 		return {
 			content: {
 				username: `gitlab/${mr.target.name}`,
-				icon_url: mr.target.avatar_url || mr.source.avatar_url || user.avatar_url || '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				text: at.join(' '),
 				attachments: [
 					makeAttachment(user, `${mr.action} MR [#${mr.iid} ${mr.title}](${mr.url})\n${mr.source_branch} into ${mr.target_branch}`, mr.updated_at)
@@ -247,12 +253,13 @@ See: ${data.object_attributes.url}`,
 			name: data.user_name,
 			avatar_url: data.user_avatar
 		};
+		const avatar = project.avatar_url || data.user_avatar || DEFAULT_AVATAR;
 		// branch removal
 		if (data.checkout_sha === null && !data.commits.length) {
 			return {
 				content: {
 					username: `gitlab/${project.name}`,
-					icon_url: project.avatar_url || data.user_avatar || '',
+					icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 					attachments: [
 						makeAttachment(user, `removed branch ${refParser(data.ref)} from [${project.name}](${web_url})`)
 					]
@@ -264,7 +271,7 @@ See: ${data.object_attributes.url}`,
 			return {
 				content: {
 					username: `gitlab/${project.name}`,
-					icon_url: project.avatar_url || data.user_avatar || '',
+					icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 					attachments: [
 						makeAttachment(user, `pushed new branch [${refParser(data.ref)}](${web_url}/commits/${refParser(data.ref)}) to [${project.name}](${web_url}), which is ${data.total_commits_count} commits ahead of master`)
 					]
@@ -274,7 +281,7 @@ See: ${data.object_attributes.url}`,
 		return {
 			content: {
 				username: `gitlab/${project.name}`,
-				icon_url: project.avatar_url || data.user_avatar || '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				attachments: [
 					makeAttachment(user, `pushed ${data.total_commits_count} commits to branch [${refParser(data.ref)}](${web_url}/commits/${refParser(data.ref)}) in [${project.name}](${web_url})`),
 					{
@@ -294,6 +301,7 @@ See: ${data.object_attributes.url}`,
 			name: data.user_name,
 			avatar_url: data.user_avatar
 		};
+		const avatar = project.avatar_url || data.user_avatar || DEFAULT_AVATAR;
 		let message;
 		if (data.checkout_sha === null) {
 			message = `deleted tag [${tag}](${web_url}/tags/)`;
@@ -303,7 +311,7 @@ See: ${data.object_attributes.url}`,
 		return {
 			content: {
 				username: `gitlab/${project.name}`,
-				icon_url: project.avatar_url || data.user_avatar || '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				text: MENTION_ALL_ALLOWED ? '@all' : '',
 				attachments: [
 					makeAttachment(user, message)
@@ -321,11 +329,12 @@ See: ${data.object_attributes.url}`,
 		};
 		const pipeline = data.object_attributes;
 		const pipeline_time = pipeline.finished_at || pipeline.created_at;
+		const avatar = project.avatar_url || data.user_avatar || DEFAULT_AVATAR;
 
 		return {
 			content: {
 				username: `gitlab/${project.name}`,
-				icon_url: project.avatar_url || data.user_avatar || '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				attachments: [
 					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`, pipeline_time, STATUSES_COLORS[pipeline.status])
 				]
@@ -342,7 +351,7 @@ See: ${data.object_attributes.url}`,
 		return {
 			content: {
 				username: `gitlab/${data.repository.name}`,
-				icon_url: '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : DEFAULT_AVATAR,
 				attachments: [
 					makeAttachment(user, `build named *${data.build_name}* returned *${data.build_status}* for [${data.project_name}](${data.repository.homepage})`, null, STATUSES_COLORS[data.build_status])
 				]
@@ -365,11 +374,12 @@ See: ${data.object_attributes.url}`,
 		const wiki_page = data.object_attributes;
 		const wiki_page_title = this.wikiPageTitle(wiki_page);
 		const user_action = ACTION_VERBS[wiki_page.action] || 'modified';
+		const avatar = project.avatar_url || data.user.avatar_url || DEFAULT_AVATAR;
 
 		return {
 			content: {
 				username: project_path,
-				icon_url: project.avatar_url || data.user.avatar_url || '',
+				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				text: `The wiki page ${wiki_page_title} was ${user_action} by ${user_name}`
 			}
 		};

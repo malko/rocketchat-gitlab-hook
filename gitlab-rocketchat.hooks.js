@@ -220,20 +220,22 @@ See: ${data.object_attributes.url}`,
 	mergeRequestEvent(data) {
 		const user = data.user;
 		const mr = data.object_attributes;
-		const assignee = mr.assignee;
+		const assignee = data.assignee;
 		const avatar = mr.target.avatar_url || mr.source.avatar_url || user.avatar_url || DEFAULT_AVATAR;
 		let at = [];
 
 		if (mr.action === 'open' && assignee) {
-			at = '\n' + atName(assignee);
+			at.push(atName(assignee));
 		} else if (mr.action === 'merge') {
 			const lastCommitAuthor = mr.last_commit && mr.last_commit.author;
-			if (assignee && assignee.name !== user.name) {
+			if (assignee && assignee.username !== user.username) {
 				at.push(atName(assignee));
 			}
-			if (lastCommitAuthor && lastCommitAuthor.name !== user.name) {
+			if (lastCommitAuthor && lastCommitAuthor.username !== user.username) {
 				pushUniq(at, atName(lastCommitAuthor));
 			}
+		} else if (mr.action === 'update' && assignee) {
+			at.push(atName(assignee));
 		}
 		return {
 			content: {

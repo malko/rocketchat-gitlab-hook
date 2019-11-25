@@ -208,13 +208,20 @@ See: ${data.object_attributes.url}`,
 			const snippet = data.snippet;
 			text = `commented on code snippet [#${snippet.id} ${snippet.title}](${comment.url})`;
 		}
+    let rocket_text = at.join('')
+    const mentions = comment.note.match(/(@[a-zA-Z]*)/g)
+    if (mentions !== null) {
+      mentions.reduce((r, i) => { return r += ' ' + i; }, '').substring(1)
+      rocket_text += '\nmentions: ' + mentions
+    }
+        
 		return {
 			content: {
 				username: 'gitlab/' + project.name,
 				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
-				text: at.join(' '),
+				text: rocket_text,
 				attachments: [
-					makeAttachment(user, `${text}\n${comment.note}`, comment.updated_at)
+					makeAttachment(user, `${text}\n${comment.note}`, comment.updated_at)                  	
 				]
 			}
 		};

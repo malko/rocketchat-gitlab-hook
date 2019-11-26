@@ -211,8 +211,8 @@ See: ${data.object_attributes.url}`,
     let rocket_text = at.join('')
     const mentions = comment.note.match(/(@[a-zA-Z]*)/g)
     if (mentions !== null) {
-      mentions.reduce((r, i) => { return r += ' ' + i; }, '').substring(1)
-      rocket_text += '\nmentions: ' + mentions
+      const reduced = mentions.reduce((r, i) => { return r += ' ' + i; }, '').substring(1)
+      rocket_text += '\nmentions: ' + reduced
     }
         
 		return {

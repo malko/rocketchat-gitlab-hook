@@ -157,13 +157,13 @@ class Script { // eslint-disable-line
 
 		return {
 			content: {
-				username: 'gitlab/' + project.name,
+				username: 'gitlab/' + project.path_with_namespace,
 				icon_url: USE_ROCKETCHAT_AVATAR ? null : project_avatar,
 				text: (data.assignee && data.assignee.name !== data.user.name) ? atName(data.assignee) : '',
 				attachments: [
 					makeAttachment(
 						data.user,
-						`${user_action} an issue _${data.object_attributes.title}_ on ${project.name}.
+						`${user_action} an issue _${data.object_attributes.title}_ on ${project.path_with_namespace}.
 *Description:* ${data.object_attributes.description}.
 ${assigned}
 See: ${data.object_attributes.url}`,
@@ -207,7 +207,7 @@ See: ${data.object_attributes.url}`,
 		}
 		return {
 			content: {
-				username: 'gitlab/' + project.name,
+				username: 'gitlab/' + project.path_with_namespace,
 				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				text: at.join(' '),
 				attachments: [
@@ -261,10 +261,10 @@ See: ${data.object_attributes.url}`,
 		if (data.checkout_sha === null && !data.commits.length) {
 			return {
 				content: {
-					username: `gitlab/${project.name}`,
+					username: `gitlab/${project.path_with_namespace}`,
 					icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 					attachments: [
-						makeAttachment(user, `removed branch ${refParser(data.ref)} from [${project.name}](${web_url})`)
+						makeAttachment(user, `removed branch ${refParser(data.ref)} from [${project.path_with_namespace}](${web_url})`)
 					]
 				}
 			};
@@ -273,20 +273,20 @@ See: ${data.object_attributes.url}`,
 		if (data.before == 0) { // eslint-disable-line
 			return {
 				content: {
-					username: `gitlab/${project.name}`,
+					username: `gitlab/${project.path_with_namespace}`,
 					icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 					attachments: [
-						makeAttachment(user, `pushed new branch [${refParser(data.ref)}](${web_url}/commits/${refParser(data.ref)}) to [${project.name}](${web_url}), which is ${data.total_commits_count} commits ahead of master`)
+						makeAttachment(user, `pushed new branch [${refParser(data.ref)}](${web_url}/commits/${refParser(data.ref)}) to [${project.path_with_namespace}](${web_url}), which is ${data.total_commits_count} commits ahead of master`)
 					]
 				}
 			};
 		}
 		return {
 			content: {
-				username: `gitlab/${project.name}`,
+				username: `gitlab/${project.path_with_namespace}`,
 				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				attachments: [
-					makeAttachment(user, `pushed ${data.total_commits_count} commits to branch [${refParser(data.ref)}](${web_url}/commits/${refParser(data.ref)}) in [${project.name}](${web_url})`),
+					makeAttachment(user, `pushed ${data.total_commits_count} commits to branch [${refParser(data.ref)}](${web_url}/commits/${refParser(data.ref)}) in [${project.path_with_namespace}](${web_url})`),
 					{
 						text: data.commits.map((commit) => `  - ${new Date(commit.timestamp).toUTCString()} [${commit.id.slice(0, 8)}](${commit.url}) by ${commit.author.name}: ${commit.message.replace(/\s*$/, '')}`).join('\n'),
 						color: NOTIF_COLOR
@@ -313,7 +313,7 @@ See: ${data.object_attributes.url}`,
 		}
 		return {
 			content: {
-				username: `gitlab/${project.name}`,
+				username: `gitlab/${project.path_with_namespace}`,
 				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				text: MENTION_ALL_ALLOWED ? '@all' : '',
 				attachments: [
@@ -336,7 +336,7 @@ See: ${data.object_attributes.url}`,
 
 		return {
 			content: {
-				username: `gitlab/${project.name}`,
+				username: `gitlab/${project.path_with_namespace}`,
 				icon_url: USE_ROCKETCHAT_AVATAR ? null : avatar,
 				attachments: [
 					makeAttachment(user, `pipeline returned *${pipeline.status}* for commit [${commit.id.slice(0, 8)}](${commit.url}) made by *${commit.author.name}*`, pipeline_time, STATUSES_COLORS[pipeline.status])
@@ -429,6 +429,12 @@ See: ${data.object_attributes.url}`,
 			case 'group_rename':
 				text = `Group \`${data.old_full_path}\` was ${action} to \`${data.full_path}\`.`;
 				break;
+            case 'push':
+                return this.pushEvent(data);
+            case 'tag_push':
+                return this.tagEvent(data);
+            case 'repository_update':
+                return;
 			default:
 				text = 'Unknown system event';
 				break;

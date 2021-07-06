@@ -82,6 +82,9 @@ class Script { // eslint-disable-line
 				case 'System Hook':
 					result = this.systemEvent(request.content);
 					break;
+				case "Release Hook":
+          				result = this.releaseEvent(request.content);
+          				break;
 				default:
 					if (IGNORE_UNKNOWN_EVENTS) {
 						console.log('gitlabevent unknown', event);
@@ -387,6 +390,29 @@ See: ${data.object_attributes.url}`,
 			}
 		};
 	}
+
+	releaseEvent(data) {
+		const project = data.project;
+                const project_name = project.name;
+		const avatar = project.avatar_url || DEFAULT_AVATAR;
+    		const user = {
+      			name: data.commit.author.name,
+      			email: data.commit.author.email,
+      			avatar_url: avatar
+    		};
+    		const tag = data.tag;
+    		const user_action = ACTION_VERBS[data.action] || "modified";
+    		const release_description = data.description;
+
+    		return {
+      			content: {
+        			username: `gitlab/${project_name}`,
+        			icon_url: USE_ROCKETCHAT_AVATAR ? null : DEFAULT_AVATAR,
+        			text: `${user_action} release for ${project_name} with tag ${tag} by ${user.name}`,
+        			attachments: [makeAttachment(user, release_description)],
+      			},
+    		};
+  	}
 
 	systemEvent(data) {
 		const event_name = data.event_name;

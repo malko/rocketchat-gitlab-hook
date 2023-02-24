@@ -231,7 +231,7 @@ See: ${data.object_attributes.url}`,
 		const mr = data.object_attributes;
 		const assignee = data.assignee;
 		const avatar = mr.target.avatar_url || mr.source.avatar_url || user.avatar_url || DEFAULT_AVATAR;
-		let at = [];
+		const at = [];
 
 		if (mr.action === 'open' && assignee) {
 			at.push(atName(assignee));
